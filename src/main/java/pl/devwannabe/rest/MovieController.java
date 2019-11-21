@@ -24,19 +24,23 @@ public class MovieController {
     @NonNull
     private MovieService movieService;
 
-    public MovieController(@NonNull MovieService movieService) {
+    @NonNull
+    private ObjectMapper objectMapper;
+
+    public MovieController(@NonNull MovieService movieService, @NonNull ObjectMapper objectMapper) {
         Validate.notNull(movieService);
+        Validate.notNull(objectMapper);
+        this.objectMapper = objectMapper;
         this.movieService = movieService;
     }
 
     @PostMapping(value = "/movie/save", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     ResponseEntity<Object> saveMovie(@RequestParam("jsonMovieFile") MultipartFile jsonMovieFile, @RequestParam(value = "image", required = false) MultipartFile image) {
-        ObjectMapper objectMapper = new ObjectMapper();
         log.info("saveMovie (movie = [{}], image = [{}])", jsonMovieFile.getName(), image.getName());
         try {
             byte[] bytes = jsonMovieFile.getBytes();
-            String completeData = new String(bytes);
-            Movie movie = objectMapper.readValue(completeData, Movie.class);
+            String jsonMovie = new String(bytes);
+            Movie movie = objectMapper.readValue(jsonMovie, Movie.class);
             movieService.saveMovie(movie, image);
             return ResponseEntity.ok().build();
         } catch (IOException e) {
@@ -48,7 +52,7 @@ public class MovieController {
         }
     }
 
-    @GetMapping("/all-movies")
+    @GetMapping("/movie/all")
     ResponseEntity<List<Movie>> getAllMovies() {
         val body = movieService.getAllMovies();
         if (body.isEmpty()) {
