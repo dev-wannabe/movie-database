@@ -1,5 +1,6 @@
 package pl.devwannabe.service;
 
+import com.mongodb.lang.Nullable;
 import lombok.NonNull;
 import lombok.val;
 import org.apache.commons.lang3.Validate;
@@ -26,10 +27,14 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public void saveMovie(Movie movie, MultipartFile image) throws IOException {
-        val binaryImage = new Binary(BsonBinarySubType.BINARY, image.getBytes());
-        movie.setImage(binaryImage);
-        movieRepository.addMovie(movie);
+    public void saveMovie(Movie movie, @Nullable MultipartFile image) throws IOException {
+        if (image == null || image.isEmpty()) {
+            movieRepository.saveMovie(movie);
+        } else {
+            val binaryImage = new Binary(BsonBinarySubType.BINARY, image.getBytes());
+            movie.setImage(binaryImage);
+            movieRepository.saveMovie(movie);
+        }
     }
 
     @Override

@@ -1,4 +1,4 @@
-package pl.devwannabe.config;
+package pl.devwannabe.app.config;
 
 import com.google.common.base.Predicates;
 import org.springframework.context.annotation.Bean;
@@ -33,7 +33,6 @@ public class SwaggerConfig {
         return new ApiInfoBuilder()
                 .title("Movie Database REST API")
                 .description("API access to the Movie Database<br/><br/>")
-
                 .build();
     }
 }

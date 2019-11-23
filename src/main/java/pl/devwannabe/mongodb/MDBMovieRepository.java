@@ -23,7 +23,7 @@ public class MDBMovieRepository implements MovieRepository {
     }
 
     @Override
-    public void addMovie(Movie movie) {
+    public void saveMovie(Movie movie) {
         repository.save(MovieDoc.convertFromMovie(movie));
     }
 

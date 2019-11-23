@@ -1,6 +1,8 @@
 package pl.devwannabe.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -24,35 +26,39 @@ public class MovieController {
     @NonNull
     private MovieService movieService;
 
-    @NonNull
-    private ObjectMapper objectMapper;
-
-    public MovieController(@NonNull MovieService movieService, @NonNull ObjectMapper objectMapper) {
+    public MovieController(@NonNull MovieService movieService) {
         Validate.notNull(movieService);
-        Validate.notNull(objectMapper);
-        this.objectMapper = objectMapper;
         this.movieService = movieService;
     }
 
+    @ApiOperation(value = "Create or update movie by sending files: json with movie object and optional image.")
     @PostMapping(value = "/movie/save", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    ResponseEntity<Object> saveMovie(@RequestParam("jsonMovieFile") MultipartFile jsonMovieFile, @RequestParam(value = "image", required = false) MultipartFile image) {
-        log.info("saveMovie (movie = [{}], image = [{}])", jsonMovieFile.getName(), image.getName());
-        try {
-            byte[] bytes = jsonMovieFile.getBytes();
-            String jsonMovie = new String(bytes);
-            Movie movie = objectMapper.readValue(jsonMovie, Movie.class);
-            movieService.saveMovie(movie, image);
-            return ResponseEntity.ok().build();
-        } catch (IOException e) {
-            log.error("importing movie failed", e.getMessage());
+    ResponseEntity<Object> saveMovie(@RequestParam("jsonMovieFile")
+                                     @ApiParam(value = "example: /movie-database/src/main/resources/movie.json")
+                                     @NonNull MultipartFile jsonMovieFile,
+                                     @RequestParam(value = "image", required = false) MultipartFile image) {
+        if (jsonMovieFile == null || jsonMovieFile.isEmpty()) {
             return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            log.error("importing movie failed", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        } else {
+            ObjectMapper objectMapper = new ObjectMapper();
+            try {
+                log.info("saveMovie (movie = [{}]", jsonMovieFile);
+                byte[] bytes = jsonMovieFile.getBytes();
+                String jsonMovie = new String(bytes);
+                val movie = objectMapper.readValue(jsonMovie, Movie.class);
+                movieService.saveMovie(movie, image);
+                return ResponseEntity.ok().build();
+            } catch (IOException e) {
+                log.error("importing files failed", e.getMessage());
+                return ResponseEntity.badRequest().build();
+            } catch (Exception e) {
+                log.error("importing files failed", e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
         }
     }
 
-    @GetMapping("/movie/all")
+    @GetMapping("/all-movies")
     ResponseEntity<List<Movie>> getAllMovies() {
         val body = movieService.getAllMovies();
         if (body.isEmpty()) {
@@ -62,11 +68,11 @@ public class MovieController {
     }
 
     @GetMapping("/movie/id/{id}")
-    ResponseEntity<Movie> getMovieById(@PathVariable String id) {
-        if (id == null) {
+    ResponseEntity<Movie> getMovieById(@PathVariable @NonNull String id) {
+        if (id == null || id.trim().isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
-        val body = movieService.getMovieById(id);
+        val body = movieService.getMovieById(id.trim());
         if (body == null) {
             return ResponseEntity.notFound().build();
         }
@@ -74,8 +80,8 @@ public class MovieController {
     }
 
     @GetMapping("/movie/title/{title}")
-    ResponseEntity<List<Movie>> getMoviesByTitle(@PathVariable String title) {
-        if (title == null) {
+    ResponseEntity<List<Movie>> getMoviesByTitle(@PathVariable @NonNull String title) {
+        if (title == null || title.trim().isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
         val body = movieService.getMoviesByTitle(title);
@@ -86,8 +92,8 @@ public class MovieController {
     }
 
     @DeleteMapping("/movie/delete/{id}")
-    ResponseEntity deleteMovie(@PathVariable String id) {
-        if (id == null) {
+    ResponseEntity deleteMovie(@PathVariable @NonNull String id) {
+        if (id == null || id.trim().isEmpty()) {
             return ResponseEntity.badRequest().build();
         } else
             movieService.removeMovie(id);
